@@ -69,7 +69,7 @@ def vecrotatex(angle, vin, vout):
 # Some base variables
 diameter = 8.0
 sz = 2.125 / diameter
-numMetaballs = 2
+numMetaballs = 1
 gravity = 9.8
 center = Vector((0.0, 0.0, 0.0))
 
@@ -126,21 +126,21 @@ print("total time is " + str(total_time))
 # and lighting?
 
 # Add a sun lamp above the grid.
-bpy.ops.object.light_add(type='SUN', radius=1.0, location=(0.5, 0.5, 0.5))
+bpy.ops.object.light_add(type='SUN', radius=1.0, location=(0.5, 0.5, 0))
 
 # Add an isometric camera above the grid.
 # Rotate 45 degrees on the x-axis, 180 - 45 (135) degrees on the z-axis.
-bpy.ops.object.camera_add(location=(0, 1, 0.5), rotation=(-1.5, 0.0, 0))
+bpy.ops.object.camera_add(location=(0, 0.8, 0.5), rotation=(-1.5, 0.0, 0))
 bpy.context.object.data.type = 'ORTHO'
 bpy.context.object.data.ortho_scale = 3
 
 
 for i in range(0, numMetaballs, 1):
-    time_offset = 0#random() * 100
-    width_offset = random() - 0.5
+    time_offset = random() * 100
+    width_offset = 0#0.2*i - 2#random()*1.2 - 0.6
     size_multiplier = random();
-    pt = Vector((width_offset, 0.0, 1.0))
-    initial_height = 1
+    pt = Vector((width_offset, 0.0, 0))
+    initial_height = 0
     
     # Add a metaelement to the metaball.
     # See elemtypes array above for possible shapes.
@@ -148,7 +148,7 @@ for i in range(0, numMetaballs, 1):
     mbelm.co = pt
     mbelm.radius = 0.15 +  size_multiplier * 0.1
     # Stiffness of blob, in a range of 1 .. 10.
-    mbelm.stiffness = 1
+    mbelm.stiffness = 0.8
 
     # Set metaelement to have a repulsive, rather than attractive force.
     mbelm.use_negative = True
@@ -164,8 +164,7 @@ for i in range(0, numMetaballs, 1):
 
     rad = 0.01 + sz * abs(sinphi) * 0.99
     pt.z = cosphi * diameter
-
-    for j in range(0, longitude, 1):
+or j in range(0, longitude, 1):
         jprc = j * invlongitude
         theta = TWOPI * j / longitude
 
@@ -183,11 +182,11 @@ for i in range(0, numMetaballs, 1):
     #currot = startrot
     #center = startcenter
     apply_gravity = True
-    for f in range(0, total_time-1, 1):
+    for f in range(0, total_time-1, 10):
         if f < time_offset:
             continue
         
-        if pt.z < (1/total_time):
+        if pt.z > 1-(1/total_time):
             #print("removing gravity for element " + str(i))
             mbelm.use_negative = False
             apply_gravity = False
@@ -195,14 +194,14 @@ for i in range(0, numMetaballs, 1):
         # now apply gravity
         if apply_gravity:
             #print("applying gravity - height is " + str(pt))
-            pt.z = initial_height - f*(1/240)
+            pt.z = initial_height + 10*f*(1/240)
             #mbelm.co[2] = mbelm.co[2] - (1/frange)# = -0.5*gravity*(f-time_offset)*(f-time_offset) # might need to scale this down
             
         mbelm.co = pt
         #print("position for " + str(i) + " is " + str(mbelm.co))
         bpy.context.scene.frame_set(currframe)
 
-        print("creating keyframe for element " + str(i))
-        mbelm.keyframe_insert(data_path='co')
+        print("creating keyframe for element " + str(i) + " and frame " + str(currframe))
+        mbelm.keyframe_insert(data_path='co', index=2)
 
-        currframe += 1
+        currframe += 10
