@@ -10,6 +10,8 @@ from random import TWOPI
 # where blobs are created at the top, fall to the bottom whilst repelling,
 # and then reform at the bottom, very water-like (high reynolds number fluid)
 
+# I'll try this for a bit longer, before just copying their approach and modifying
+
 # Some of this code is boilerplate and/or copied from https://medium.com/@behreajj/creative-coding-in-blender-a-primer-53e79ff71e
 
 # Some vector operations
@@ -61,10 +63,13 @@ def vecrotatex(angle, vin, vout):
     vout.z = cosa * vin.z + sina * vin.y
     return vout
 
+
+
+
 # Some base variables
 diameter = 8.0
 sz = 2.125 / diameter
-numMetaballs = 20
+numMetaballs = 2
 gravity = 9.8
 center = Vector((0.0, 0.0, 0.0))
 
@@ -74,7 +79,8 @@ elemtypes = ['BALL', 'CAPSULE', 'PLANE', 'ELLIPSOID', 'CUBE']
 # Create metaball data, then assign it to a metaball object.
 mbdata = bpy.data.metaballs.new('SphereData')
 mbdata.render_resolution = 0.075
-mbdata.resolution = 0.2
+mbdata.resolution = 0.02
+#mbdata.update_method = UPDATE_ALWAYS
 mbobj = bpy.data.objects.new("Sphere", mbdata)
 bpy.context.scene.collection.objects.link(mbobj)
 
@@ -105,6 +111,8 @@ if frange == 0:
 fincr = ceil(frange * invfcount)
 total_time = frange
 
+print("total time is " + str(total_time))
+
 # Loop over each metaball element
 
 # Firstly, I want to loop over total number of elements
@@ -116,29 +124,31 @@ total_time = frange
 
 # Do we need to set a camera up here?
 # and lighting?
-"""
+
 # Add a sun lamp above the grid.
-bpy.ops.object.lamp_add(type='SUN', radius=1.0, location=(0.0, 0.0, extents * 0.667))
+bpy.ops.object.light_add(type='SUN', radius=1.0, location=(0.5, 0.5, 0.5))
 
 # Add an isometric camera above the grid.
 # Rotate 45 degrees on the x-axis, 180 - 45 (135) degrees on the z-axis.
-bpy.ops.object.camera_add(location=(extents * 1.414, extents * 1.414, extents * 2.121), rotation=(0.785398, 0.0, 2.35619))
+bpy.ops.object.camera_add(location=(0, 1, 0.5), rotation=(-1.5, 0.0, 0))
 bpy.context.object.data.type = 'ORTHO'
-bpy.context.object.data.ortho_scale = extents * 7.0
-"""
+bpy.context.object.data.ortho_scale = 3
+
 
 for i in range(0, numMetaballs, 1):
-    time_offset = random() * 100
+    time_offset = 0#random() * 100
+    width_offset = random() - 0.5
     size_multiplier = random();
-    pt = Vector((0.0, 0.0, 1.0))
+    pt = Vector((width_offset, 0.0, 1.0))
+    initial_height = 1
     
     # Add a metaelement to the metaball.
     # See elemtypes array above for possible shapes.
-    mbelm = mbdata.elements.new(type=elemtypes[0])
+    mbelm = mbdata.elements.new(type=elemtypes[3])
     mbelm.co = pt
-    mbelm.radius = 0.15 + sz * size_multiplier * 1.85
+    mbelm.radius = 0.15 +  size_multiplier * 0.1
     # Stiffness of blob, in a range of 1 .. 10.
-    mbelm.stiffness = 0.8
+    mbelm.stiffness = 1
 
     # Set metaelement to have a repulsive, rather than attractive force.
     mbelm.use_negative = True
@@ -173,20 +183,26 @@ for i in range(0, numMetaballs, 1):
     #currot = startrot
     #center = startcenter
     apply_gravity = True
-    for f in range(0, fcount, 1):
+    for f in range(0, total_time-1, 1):
         if f < time_offset:
             continue
         
-        if mbelm.co[2] < 0.01:
+        if pt.z < (1/total_time):
+            #print("removing gravity for element " + str(i))
             mbelm.use_negative = False
             apply_gravity = False
         
         # now apply gravity
         if apply_gravity:
-            mbelm.co[2] = -0.5*gravity*(f-time_offset)*(f-time_offset) # might need to scale this down
-        
+            #print("applying gravity - height is " + str(pt))
+            pt.z = initial_height - f*(1/240)
+            #mbelm.co[2] = mbelm.co[2] - (1/frange)# = -0.5*gravity*(f-time_offset)*(f-time_offset) # might need to scale this down
+            
+        mbelm.co = pt
+        #print("position for " + str(i) + " is " + str(mbelm.co))
         bpy.context.scene.frame_set(currframe)
 
+        print("creating keyframe for element " + str(i))
         mbelm.keyframe_insert(data_path='co')
 
-        currframe += fincr
+        currframe += 1
