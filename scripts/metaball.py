@@ -2,7 +2,7 @@ import bpy
 from math import pi, sin, cos, ceil
 from mathutils import Vector, Quaternion
 import colorsys
-import random
+from random import random
 from random import TWOPI
 
 # So this is an exploration of metaballs
@@ -65,10 +65,7 @@ def vecrotatex(angle, vin, vout):
 diameter = 8.0
 sz = 2.125 / diameter
 numMetaballs = 20
-iprc = 0.0
-jprc = 0.0
-phi = 0.0
-theta = 0.0
+gravity = 9.8
 center = Vector((0.0, 0.0, 0.0))
 
 # metaball element types
@@ -131,8 +128,8 @@ bpy.context.object.data.ortho_scale = extents * 7.0
 """
 
 for i in range(0, numMetaballs, 1):
-    time_offset = rand(100)
-    size_multiplier = rand(100)/100;
+    time_offset = random() * 100
+    size_multiplier = random();
     pt = Vector((0.0, 0.0, 1.0))
     
     # Add a metaelement to the metaball.
@@ -175,33 +172,21 @@ for i in range(0, numMetaballs, 1):
     currframe = bpy.context.scene.frame_start
     #currot = startrot
     #center = startcenter
+    apply_gravity = True
     for f in range(0, fcount, 1):
         if f < time_offset:
             continue
         
         if mbelm.co[2] < 0.01:
             mbelm.use_negative = False
+            apply_gravity = False
         
         # now apply gravity
+        if apply_gravity:
+            mbelm.co[2] = -0.5*gravity*(f-time_offset)*(f-time_offset) # might need to scale this down
         
-        fprc = f * invfcount
-        osc = abs(sin(TWOPI * fprc))
         bpy.context.scene.frame_set(currframe)
 
-        # Animate location.
-        vecrotate(TWOPI * fprc, axis, pt, rotpt)
-        center = startcenter.lerp(stopcenter, osc)
-        rotpt = rotpt + center
-        current.location = rotpt
-        current.keyframe_insert(data_path='location')
-
-        # Animate rotation.
-        currot = startrot.slerp(stoprot, jprc * fprc)
-        current.rotation_euler = currot.to_euler()
-        current.keyframe_insert(data_path='rotation_euler')
-
-        # Animate color.
-        mat.diffuse_color = colorsys.hsv_to_rgb(jprc, osc, 1.0)
-        mat.keyframe_insert(data_path='diffuse_color')
+        mbelm.keyframe_insert(data_path='co')
 
         currframe += fincr
